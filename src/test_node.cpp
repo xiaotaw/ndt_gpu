@@ -77,6 +77,22 @@ int main(int argc, char** argv)
   // Setting point cloud to be aligned to.
   ndt.setInputTarget (target_cloud);
 
+
+
+  // Set initial alignment estimate found using robot odometry.
+  Eigen::AngleAxisf init_rotation (0.6931, Eigen::Vector3f::UnitZ ());
+  Eigen::Translation3f init_translation (1.79387, 0.720047, 0);
+  Eigen::Matrix4f init_guess = (init_translation * init_rotation).matrix ();
+
+  // Calculating required rigid transform to align the input cloud to the target cloud.
+  pcl::PointCloud<pcl::PointXYZ>::Ptr output_cloud (new pcl::PointCloud<pcl::PointXYZ>);
+  clock_t start = clock();
+  Eigen::Matrix4f final_trans;
+  bool converged = false;
+  double fitness_score = -1;
+
+  if(use_gpu){
+
   // std::shared_ptr<gpu::GNormalDistributionsTransform> new_gpu_ndt_ptr = std::make_shared<gpu::GNormalDistributionsTransform>();
   // new_gpu_ndt_ptr->setResolution(1.0);
   // new_gpu_ndt_ptr->setInputTarget(target_cloud);
@@ -104,19 +120,6 @@ int main(int argc, char** argv)
   g_ndt.setInputTarget (target_cloud);
 
 
-  // Set initial alignment estimate found using robot odometry.
-  Eigen::AngleAxisf init_rotation (0.6931, Eigen::Vector3f::UnitZ ());
-  Eigen::Translation3f init_translation (1.79387, 0.720047, 0);
-  Eigen::Matrix4f init_guess = (init_translation * init_rotation).matrix ();
-
-  // Calculating required rigid transform to align the input cloud to the target cloud.
-  pcl::PointCloud<pcl::PointXYZ>::Ptr output_cloud (new pcl::PointCloud<pcl::PointXYZ>);
-  clock_t start = clock();
-  Eigen::Matrix4f final_trans;
-  bool converged = false;
-  double fitness_score = -1;
-
-  if(use_gpu){
     // new_gpu_ndt_ptr->align(init_guess);
     // final_trans = new_gpu_ndt_ptr->getFinalTransformation();
     // converged = new_gpu_ndt_ptr->hasConverged();
@@ -175,7 +178,7 @@ int main(int argc, char** argv)
   while (!viewer_final->wasStopped ())
   {
     viewer_final->spinOnce (100);
-    boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+    //boost::this_thread::sleep (boost::posix_time::microseconds (100000));
   }
 
 

@@ -1,54 +1,29 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ndt_gpu)
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -Wall -mtune=native")
 
-find_package(catkin REQUIRED COMPONENTS
-	velodyne_pointcloud
-)
+set(EIGEN_ROOT "/home/xt/Documents/data/Others/eigen-3.3.9")
+set(EIGEN_INCLUDE_DIR ${EIGEN_ROOT})
+INCLUDE_DIRECTORIES(${EIGEN_INCLUDE_DIR})
+
 find_package(PCL REQUIRED)
+
+find_package(Boost)
+
 find_package(CUDA)
-find_package(Eigen3 REQUIRED)
-
 if (CUDA_FOUND)
-  set_directory_properties(PROPERTIES COMPILE_DEFINITIONS "")
-
-	if(NOT DEFINED CUDA_CAPABILITY_VERSION_CHECKER)
-		set(CUDA_CAPABILITY_VERSION_CHECKER
-			"${CATKIN_DEVEL_PREFIX}/lib/capability_version_checker")
-  endif()
-  
-  execute_process(
-	    COMMAND ${CUDA_CAPABILITY_VERSION_CHECKER}
-	    OUTPUT_VARIABLE CUDA_CAPABILITY_VERSION
-	    OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    
-	if("${CUDA_CAPABILITY_VERSION}" MATCHES "^[1-9][0-9]+$")
-	  set(CUDA_ARCH "sm_${CUDA_CAPABILITY_VERSION}")
-	else()
-	  set(CUDA_ARCH "sm_52")
-	endif()
-	
-	set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-arch=${CUDA_ARCH};-std=c++11;--ptxas-options=-v)
+	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -O3 -std=c++11 -gencode=arch=compute_61,code=sm_61")
 	
 	set(SUBSYS_NAME ndt_gpu)
 	set(SUBSYS_DESC "Point cloud ndt gpu library")
-	set(SUBSYS_DEPS common)
 	set(LIB_NAME "fast_pcl_ndt_gpu")
 	
-#	catkin_package(
-#  	DEPENDS ${SUBSYS_DEPS}
-#  	INCLUDE_DIRS include
-#   LIBRARIES ${LIB_NAME}
-#  )
-
-  include_directories(
-    ${PCL_INCLUDE_DIRS}
-    ${catkin_INCLUDE_DIRS}
-    ${CUDA_INCLUDE_DIRS}
-    "${CMAKE_CURRENT_SOURCE_DIR}/include"
-  )
+    include_directories(
+      ${CUDA_INCLUDE_DIRS}
+      ${PCL_INCLUDE_DIRS}
+      "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    )
 
 	set(srcs
 	  src/MatrixDevice.cu
@@ -82,15 +57,14 @@ if (CUDA_FOUND)
 		${CUDA_CUBLAS_LIBRARIES}
 		${CUDA_curand_LIBRARY})
 
-	#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 ")
-	SET(CMAKE_CXX_FLAGS "-std=c++11 -O2 -g -Wall ${CMAKE_CXX_FLAGS}")
 
 	add_executable(test_node src/test_node.cpp)	
 	#target_include_directories(test_node PRIVATE ${CUDA_INCLUDE_DIRS})
 	target_link_libraries(test_node
 		${LIB_NAME}
 		#${catkin_LIBRARIES} 
-  		${PCL_LIBRARIES} 
+  	    ${PCL_LIBRARIES}
+        ${Boost_LIBRARIES}
 	)
 else()
 	message("fast_pcl ndt_gpu requires CUDA")
